@@ -1,0 +1,13 @@
+{
+  "name": "TaskBoard",
+  "short_name": "TaskBoard",
+  "description": "A fast, shared task list for small teams.",
+  "start_url": "/tasks",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#fbf9f5",
+  "theme_color": "#fbf9f5",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

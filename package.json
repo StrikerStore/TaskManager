@@ -1,0 +1,20 @@
+{
+  "name": "taskboard",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -n api,web -c cyan,magenta \"pnpm -F backend dev\" \"pnpm -F frontend dev\"",
+    "build": "pnpm -F backend build && pnpm -F frontend build",
+    "db:generate": "pnpm -F backend db:generate",
+    "db:migrate": "pnpm -F backend db:migrate",
+    "db:studio": "pnpm -F backend db:studio",
+    "lint": "pnpm -r lint"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  },
+  "packageManager": "pnpm@10.23.0",
+  "engines": {
+    "node": "24.x"
+  }
+}

@@ -1,0 +1,297 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   TaskBoard design tokens — warm paper ground, ink text, one signal accent.
+   Light is the default; dark mirrors every token.
+--------------------------------------------------------------------------- */
+:root {
+  --paper: #fbf9f5;
+  --paper-raised: #ffffff;
+  --paper-sunken: #f3f0e8;
+  --ink: #16150f;
+  --ink-soft: #46433a;
+  --ink-muted: #75705f;
+  --rule: #e4dfd2;
+  --rule-strong: #d2ccba;
+
+  --signal: #c8410b;
+  --signal-soft: #f7e6dc;
+  --done: #3f6f4a;
+  --done-soft: #e3eee4;
+  --urgent: #a41d1d;
+  --high: #c8410b;
+  --medium: #8a7a2f;
+  --low: #6b7280;
+
+  --shadow-sheet: 0 24px 60px -20px rgb(22 21 15 / 0.28);
+  --shadow-row: 0 1px 0 0 var(--rule);
+  --radius: 10px;
+}
+
+:root[data-theme="dark"],
+html.dark {
+  --paper: #121110;
+  --paper-raised: #1a1917;
+  --paper-sunken: #0d0c0b;
+  --ink: #f3f0e7;
+  --ink-soft: #cdc8bb;
+  --ink-muted: #8f8a7c;
+  --rule: #2b2925;
+  --rule-strong: #3b3833;
+
+  --signal: #f0763c;
+  --signal-soft: #38211a;
+  --done: #7fb98c;
+  --done-soft: #1c2a1f;
+  --urgent: #e26a6a;
+  --high: #f0763c;
+  --medium: #cbb65a;
+  --low: #9ca3af;
+
+  --shadow-sheet: 0 24px 60px -20px rgb(0 0 0 / 0.6);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #121110;
+    --paper-raised: #1a1917;
+    --paper-sunken: #0d0c0b;
+    --ink: #f3f0e7;
+    --ink-soft: #cdc8bb;
+    --ink-muted: #8f8a7c;
+    --rule: #2b2925;
+    --rule-strong: #3b3833;
+
+    --signal: #f0763c;
+    --signal-soft: #38211a;
+    --done: #7fb98c;
+    --done-soft: #1c2a1f;
+    --urgent: #e26a6a;
+    --high: #f0763c;
+    --medium: #cbb65a;
+    --low: #9ca3af;
+
+    --shadow-sheet: 0 24px 60px -20px rgb(0 0 0 / 0.6);
+  }
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-raised: var(--paper-raised);
+  --color-sunken: var(--paper-sunken);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-muted: var(--ink-muted);
+  --color-rule: var(--rule);
+  --color-rule-strong: var(--rule-strong);
+  --color-signal: var(--signal);
+  --color-signal-soft: var(--signal-soft);
+  --color-done: var(--done);
+  --color-done-soft: var(--done-soft);
+  --color-urgent: var(--urgent);
+  --color-high: var(--high);
+  --color-medium: var(--medium);
+  --color-low: var(--low);
+
+  --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, "SFMono-Regular", monospace;
+  --font-display: var(--font-instrument), Georgia, "Times New Roman", serif;
+
+  --radius-card: 10px;
+}
+
+html {
+  color-scheme: light dark;
+}
+
+body {
+  background-color: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  /* Faint paper grain: keeps large flat areas from feeling like dead pixels. */
+  background-image: radial-gradient(
+    circle at 1px 1px,
+    color-mix(in srgb, var(--ink) 6%, transparent) 1px,
+    transparent 0
+  );
+  background-size: 22px 22px;
+}
+
+/* Respect the iOS home indicator / notch on the mobile bottom bar. */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+::selection {
+  background: var(--signal);
+  color: var(--paper);
+}
+
+/* Focus ring used across interactive elements. */
+.focus-ring:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+}
+
+/* Thin scrollbars that match the paper theme. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--rule-strong) transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* Staggered entrance for task rows — one orchestrated reveal, not constant motion. */
+@keyframes row-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.row-in {
+  animation: row-in 260ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+@keyframes sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.sheet-in {
+  animation: sheet-in 200ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+@keyframes strike {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Form controls. Browsers draw date pickers, spinners and option lists
+   themselves, so these are the bits Tailwind classes cannot reach.
+--------------------------------------------------------------------------- */
+
+/* The calendar / clock button inside date and time inputs. */
+.tb-field::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.55;
+  /* Recolour the browser's black glyph towards our ink, and flip it in dark mode. */
+  filter: grayscale(1) contrast(0.85);
+  transition: opacity 150ms ease;
+}
+
+.tb-field::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+:root:not([data-theme="light"]) .tb-field::-webkit-calendar-picker-indicator,
+:root[data-theme="dark"] .tb-field::-webkit-calendar-picker-indicator {
+  filter: invert(1) grayscale(1) contrast(0.85);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .tb-field::-webkit-calendar-picker-indicator {
+    filter: invert(1) grayscale(1) contrast(0.85);
+  }
+}
+
+/* Date and time fields inherit the paper theme rather than the OS default. */
+.tb-field::-webkit-datetime-edit {
+  color: var(--ink);
+}
+
+.tb-field::-webkit-datetime-edit-fields-wrapper {
+  padding: 0;
+}
+
+.tb-field::-webkit-datetime-edit-text {
+  color: var(--ink-muted);
+  padding: 0 1px;
+}
+
+/* Number inputs: the default spinners are tiny and off-palette. */
+.tb-field[type="number"] {
+  -moz-appearance: textfield;
+}
+
+.tb-field[type="number"]::-webkit-outer-spin-button,
+.tb-field[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* The option list is drawn by the OS; these two properties are all it honours. */
+.tb-field option {
+  background-color: var(--paper-raised);
+  color: var(--ink);
+}
+
+/* Checkboxes and radios pick up the accent instead of browser blue. */
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--signal);
+}
+
+/* Autofill in Chrome paints its own yellow; keep the paper ground. */
+.tb-field:-webkit-autofill,
+.tb-field:-webkit-autofill:hover,
+.tb-field:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--ink);
+  -webkit-box-shadow: 0 0 0 1000px var(--paper-raised) inset;
+  caret-color: var(--ink);
+}
+
+/* Popover entrance for the select, time and date panels. */
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.pop-in {
+  animation: pop-in 140ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  transform-origin: top center;
+}
+
+/* Horizontal chip rows scroll, but the bar itself is noise. */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
