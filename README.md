@@ -65,7 +65,7 @@ Open http://localhost:3100, create an account, then create a team or join one wi
 
 ## Deploying to Railway
 
-The project is ready for Railway as three services in one project:
+The project runs on Railway as three services in one project:
 
 ```
 Browser ──https──▶ web (Next.js)  ──/api/* over private network──▶  backend (Express + scheduler) ──▶ MySQL
@@ -74,6 +74,10 @@ Browser ──https──▶ web (Next.js)  ──/api/* over private network─
 
 Only `web` is public. It forwards `/api/*` to `backend`, so the login cookie is first-party and
 works on Safari and iPhone, and the API itself is never exposed to the internet.
+
+Both app services deploy the same repository. Railpack reads the build and start commands from
+the root `package.json`, and [`scripts/railway.mjs`](scripts/railway.mjs) picks the app from one
+variable, **`TASKBOARD_APP`**. On `backend` it runs the database migrations before starting.
 
 ### 1. Put TaskBoard in its own GitHub repository
 
@@ -88,11 +92,10 @@ those names.
 
 ### 3. Configure `backend`
 
-- **Settings → Config file path:** `/backend/railway.json`
-  (build, start, watch paths, migrations on deploy, health check at `/health`)
 - **Variables:**
 
   ```
+  TASKBOARD_APP=backend
   DATABASE_URL=${{MySQL.MYSQL_URL}}
   BETTER_AUTH_SECRET=<a long random string, e.g. from: openssl rand -base64 32>
   BETTER_AUTH_URL=https://${{web.RAILWAY_PUBLIC_DOMAIN}}
@@ -102,6 +105,8 @@ those names.
   TZ=Asia/Kolkata
   ```
 
+- **Settings → Config file path:** `/backend/railway.json` — optional, but it adds watch paths
+  (so a frontend change does not rebuild the API) and a health check at `/health`.
 - **Do not** generate a public domain.
 - Keep it at **one replica** with **serverless off**: the recurring-task scheduler runs inside this
   process, so a second replica would create every recurring task twice, and a sleeping service
@@ -109,26 +114,26 @@ those names.
 
 ### 4. Configure `web`
 
-- **Settings → Config file path:** `/frontend/railway.json`
 - **Variables:**
 
   ```
+  TASKBOARD_APP=web
   API_INTERNAL_URL=http://${{backend.RAILWAY_PRIVATE_DOMAIN}}:4000
   PORT=3000
   NODE_ENV=production
   ```
 
   `API_INTERNAL_URL` is baked in when the app is built, so after changing it, redeploy `web`.
+- **Settings → Config file path:** `/frontend/railway.json` — optional, as above.
 - **Settings → Networking → Generate Domain**, target port **3000**.
 
 ### 5. Deploy
 
-Deploy both services. Before `backend` starts, its pre-deploy step runs the database migrations; if
-a migration fails, the deploy stops rather than starting against a half-migrated database. Then
-open the `web` domain and create the first account.
+Deploy both services. `backend` applies any pending migrations each time it starts; if a migration
+fails, the service does not start and the deploy shows as failed. Then open the `web` domain and
+create the first account.
 
-Pushing to the repository redeploys automatically. Watch paths mean a frontend-only change does
-not rebuild the API, and vice versa.
+If a service fails with *"TASKBOARD_APP is not set"*, add that variable to the service and redeploy.
 
 ## Useful commands
 

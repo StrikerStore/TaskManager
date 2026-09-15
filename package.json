@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "concurrently -n api,web -c cyan,magenta \"pnpm -F backend dev\" \"pnpm -F frontend dev\"",
-    "build": "pnpm -F backend build && pnpm -F frontend build",
+    "build": "node scripts/railway.mjs build",
+    "start": "node scripts/railway.mjs start",
     "db:generate": "pnpm -F backend db:generate",
     "db:migrate": "pnpm -F backend db:migrate",
     "db:studio": "pnpm -F backend db:studio",
