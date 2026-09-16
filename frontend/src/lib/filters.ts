@@ -28,8 +28,8 @@ export function filtersFromParams(params: URLSearchParams): TaskFilters {
     due: isDue(due) ? due : null,
     scope: isScope(scope) ? scope : "all",
     showCompleted: params.get("showCompleted") === "true",
-    sort: isSort(sort) ? sort : "created",
-    groupBy: isGroupBy(groupBy) ? groupBy : "none",
+    sort: isSort(sort) ? sort : DEFAULT_FILTERS.sort,
+    groupBy: isGroupBy(groupBy) ? groupBy : DEFAULT_FILTERS.groupBy,
   };
 }
 
@@ -44,7 +44,7 @@ export function paramsFromFilters(filters: TaskFilters): string {
   if (filters.due) p.set("due", filters.due);
   if (filters.scope !== "all") p.set("scope", filters.scope);
   if (filters.showCompleted) p.set("showCompleted", "true");
-  if (filters.sort !== "created") p.set("sort", filters.sort);
-  if (filters.groupBy !== "none") p.set("groupBy", filters.groupBy);
+  if (filters.sort !== DEFAULT_FILTERS.sort) p.set("sort", filters.sort);
+  if (filters.groupBy !== DEFAULT_FILTERS.groupBy) p.set("groupBy", filters.groupBy);
   return p.toString();
 }

@@ -84,7 +84,10 @@ export function Select({
 
   useEffect(() => {
     if (!open) return;
-    listRef.current?.querySelector('[data-highlighted="true"]')?.scrollIntoView({ block: "nearest" });
+    const highlighted = listRef.current?.querySelector('[data-highlighted="true"]');
+    // Guarded: not every environment implements scrollIntoView (jsdom, for one),
+    // and keeping an option in view is never worth throwing over.
+    highlighted?.scrollIntoView?.({ block: "nearest" });
   }, [open, highlight]);
 
   const move = (direction: 1 | -1) => {

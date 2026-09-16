@@ -86,8 +86,9 @@ export const DEFAULT_FILTERS: TaskFilters = {
   due: null,
   scope: "all",
   showCompleted: false,
-  sort: "created",
-  groupBy: "none",
+  // Priority first, newest next (the API breaks priority ties by creation date).
+  sort: "priority",
+  groupBy: "project",
 };
 
 export const PRIORITY_LABEL: Record<TaskPriority, string> = {

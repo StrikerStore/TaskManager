@@ -29,25 +29,34 @@ export function TaskSheet({
   const { data: members = [] } = useMembers();
   const { update, remove } = useTaskMutations();
 
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
+  /**
+   * The panel edits its own copy. Saving refreshes the list in the background,
+   * and that refresh hands back the task as it was before the edit landed, so
+   * reading straight from the prop would make a just-picked value flick back.
+   */
+  const [draft, setDraft] = useState<Task | null>(task);
 
   useEffect(() => {
-    setTitle(task?.title ?? "");
-    setDescription(task?.description ?? "");
+    // Replace the copy only when a different task is opened, never on a refetch.
+    setDraft((current) => (current && task && current.id === task.id ? current : task));
   }, [task]);
 
-  if (!task) return null;
+  if (!task || !draft) return null;
 
-  const readOnly = task.isPersonal && task.createdById !== currentUserId;
+  const readOnly = draft.isPersonal && draft.createdById !== currentUserId;
 
-  const save = (patch: Parameters<typeof update.mutate>[0]) => update.mutate(patch);
+  /** Show the change at once, and send it. */
+  const edit = (changes: Partial<Task>, patch: Parameters<typeof update.mutate>[0]) => {
+    setDraft({ ...draft, ...changes });
+    update.mutate(patch);
+  };
 
   const commitText = () => {
-    const trimmed = title.trim();
-    if (!trimmed) return;
-    if (trimmed !== task.title || description !== (task.description ?? "")) {
-      save({ id: task.id, title: trimmed, description: description || null });
+    const title = draft.title.trim();
+    if (!title) return;
+    const description = draft.description ?? "";
+    if (title !== task.title || description !== (task.description ?? "")) {
+      update.mutate({ id: draft.id, title, description: description || null });
     }
   };
 
@@ -58,7 +67,7 @@ export function TaskSheet({
         commitText();
         onClose();
       }}
-      title={task.isPersonal ? "Personal task" : "Task"}
+      title={draft.isPersonal ? "Personal task" : "Task"}
       footer={
         <div className="flex items-center gap-2">
           <Button
@@ -66,7 +75,7 @@ export function TaskSheet({
             size="sm"
             disabled={readOnly}
             onClick={() => {
-              remove.mutate(task.id);
+              remove.mutate(draft.id);
               onClose();
             }}
           >
@@ -92,9 +101,9 @@ export function TaskSheet({
           <Label htmlFor="task-title">Title</Label>
           <Input
             id="task-title"
-            value={title}
+            value={draft.title}
             disabled={readOnly}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={(e) => setDraft({ ...draft, title: e.target.value })}
             onBlur={commitText}
           />
         </div>
@@ -103,10 +112,10 @@ export function TaskSheet({
           <Label htmlFor="task-desc">Notes</Label>
           <Textarea
             id="task-desc"
-            value={description}
+            value={draft.description ?? ""}
             disabled={readOnly}
             placeholder="Anything worth remembering…"
-            onChange={(e) => setDescription(e.target.value)}
+            onChange={(e) => setDraft({ ...draft, description: e.target.value })}
             onBlur={commitText}
           />
         </div>
@@ -116,10 +125,12 @@ export function TaskSheet({
             <Label htmlFor="task-status">Status</Label>
             <Select
               id="task-status"
-              value={task.status}
+              value={draft.status}
               disabled={readOnly}
               ariaLabel="Status"
-              onChange={(v) => save({ id: task.id, status: v as TaskStatus })}
+              onChange={(v) =>
+                edit({ status: v as TaskStatus }, { id: draft.id, status: v as TaskStatus })
+              }
               options={TASK_STATUSES.map((s) => ({ value: s, label: STATUS_LABEL[s] }))}
             />
           </div>
@@ -128,10 +139,12 @@ export function TaskSheet({
             <Label htmlFor="task-priority">Priority</Label>
             <Select
               id="task-priority"
-              value={task.priority}
+              value={draft.priority}
               disabled={readOnly}
               ariaLabel="Priority"
-              onChange={(v) => save({ id: task.id, priority: v as TaskPriority })}
+              onChange={(v) =>
+                edit({ priority: v as TaskPriority }, { id: draft.id, priority: v as TaskPriority })
+              }
               options={TASK_PRIORITIES.map((p) => ({
                 value: p,
                 label: PRIORITY_LABEL[p],
@@ -140,16 +153,26 @@ export function TaskSheet({
             />
           </div>
 
-          {!task.isPersonal && (
+          {!draft.isPersonal && (
             <>
               <div>
                 <Label htmlFor="task-project">Project</Label>
                 <Select
                   id="task-project"
-                  value={task.projectId ?? ""}
+                  value={draft.projectId ?? ""}
                   disabled={readOnly}
                   ariaLabel="Project"
-                  onChange={(v) => save({ id: task.id, projectId: v || null })}
+                  onChange={(v) => {
+                    const project = projects.find((p) => p.id === v);
+                    edit(
+                      {
+                        projectId: v || null,
+                        projectName: project?.name ?? null,
+                        projectColor: project?.color ?? null,
+                      },
+                      { id: draft.id, projectId: v || null },
+                    );
+                  }}
                   options={[
                     { value: "", label: "No project" },
                     ...projects.map((p) => ({ value: p.id, label: p.name, dot: p.color })),
@@ -161,10 +184,20 @@ export function TaskSheet({
                 <Label htmlFor="task-assignee">Assignee</Label>
                 <Select
                   id="task-assignee"
-                  value={task.assigneeId ?? ""}
+                  value={draft.assigneeId ?? ""}
                   disabled={readOnly}
                   ariaLabel="Assignee"
-                  onChange={(v) => save({ id: task.id, assigneeId: v || null })}
+                  onChange={(v) => {
+                    const member = members.find((m) => m.userId === v);
+                    edit(
+                      {
+                        assigneeId: v || null,
+                        assigneeName: member?.user.name ?? null,
+                        assigneeImage: member?.user.image ?? null,
+                      },
+                      { id: draft.id, assigneeId: v || null },
+                    );
+                  }}
                   options={[
                     { value: "", label: "Unassigned" },
                     ...members.map((m) => ({ value: m.userId, label: m.user.name })),
@@ -178,9 +211,12 @@ export function TaskSheet({
             <Label htmlFor="task-due">Due date</Label>
             <DateField
               id="task-due"
-              value={toDateInputValue(task.dueDate)}
+              value={toDateInputValue(draft.dueDate)}
               disabled={readOnly}
-              onChange={(v) => save({ id: task.id, dueDate: fromDateInputValue(v) })}
+              onChange={(v) => {
+                const dueDate = fromDateInputValue(v);
+                edit({ dueDate }, { id: draft.id, dueDate });
+              }}
             />
           </div>
         </div>

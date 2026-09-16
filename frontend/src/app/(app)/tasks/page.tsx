@@ -10,7 +10,7 @@ import { useTasks, useTaskMutations } from "@/components/tasks/use-tasks";
 import { EmptyState, RowSkeleton } from "@/components/ui";
 import { useSession } from "@/lib/auth-client";
 import { filtersFromParams, paramsFromFilters } from "@/lib/filters";
-import { STATUS_LABEL, type Task, type TaskFilters } from "@/lib/types";
+import { STATUS_LABEL, TASK_STATUSES, type Task, type TaskFilters } from "@/lib/types";
 
 function groupTasks(tasks: Task[], groupBy: TaskFilters["groupBy"]): Array<[string, Task[]]> {
   if (groupBy === "none") return [["", tasks]];
@@ -27,7 +27,20 @@ function groupTasks(tasks: Task[], groupBy: TaskFilters["groupBy"]): Array<[stri
     if (bucket) bucket.push(task);
     else groups.set(key, [task]);
   }
-  return [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  // Status groups read best in their own order; everything else alphabetically,
+  // with the catch-all bucket last.
+  if (groupBy === "status") {
+    const order = TASK_STATUSES.map((s) => STATUS_LABEL[s]);
+    return [...groups.entries()].sort((a, b) => order.indexOf(a[0]) - order.indexOf(b[0]));
+  }
+
+  const CATCH_ALL = new Set(["No project", "Unassigned"]);
+  return [...groups.entries()].sort((a, b) => {
+    const aLast = CATCH_ALL.has(a[0]);
+    const bLast = CATCH_ALL.has(b[0]);
+    if (aLast !== bLast) return aLast ? 1 : -1;
+    return a[0].localeCompare(b[0]);
+  });
 }
 
 function TasksView() {

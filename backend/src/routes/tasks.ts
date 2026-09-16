@@ -131,7 +131,10 @@ tasksRouter.get("/", async (req, res, next) => {
   if (f.scope === "personal") where.push(eq(task.isPersonal, true));
   if (f.scope === "all") where.push(eq(task.isPersonal, false));
 
-  if (f.showCompleted === "false") where.push(ne(task.status, "done"));
+  // "Show done" hides finished tasks, unless the status filter asks for them by
+  // name — otherwise picking "Done" and getting nothing back is the only outcome.
+  const asksForDone = f.status?.includes("done") ?? false;
+  if (f.showCompleted === "false" && !asksForDone) where.push(ne(task.status, "done"));
 
   const order: SQL[] =
     f.sort === "due"

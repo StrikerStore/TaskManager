@@ -36,9 +36,23 @@ describe("filter URL round trip", () => {
 
     expect(filters.scope).toBe("all");
     expect(filters.due).toBeNull();
-    expect(filters.sort).toBe("created");
-    expect(filters.groupBy).toBe("none");
+    expect(filters.sort).toBe(DEFAULT_FILTERS.sort);
+    expect(filters.groupBy).toBe(DEFAULT_FILTERS.groupBy);
     expect(filters.showCompleted).toBe(false);
+  });
+
+  it("defaults to grouping by project, priority first", () => {
+    const filters = filtersFromParams(new URLSearchParams());
+    expect(filters.groupBy).toBe("project");
+    expect(filters.sort).toBe("priority");
+  });
+
+  it("keeps an explicitly chosen non-default grouping and sort in the URL", () => {
+    const filters = { ...DEFAULT_FILTERS, groupBy: "none" as const, sort: "created" as const };
+    const query = paramsFromFilters(filters);
+    expect(query).toContain("groupBy=none");
+    expect(query).toContain("sort=created");
+    expect(filtersFromParams(new URLSearchParams(query))).toEqual(filters);
   });
 
   it("parses a link from the sidebar project list", () => {
